@@ -81,27 +81,34 @@ func (s *itemReq) putItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
 	updateId := r.PathValue("id")
 
-	var updateItem Item
+	var updateItem struct {
+		Name *string `json:"name"`
+	}
 	if err := json.Unmarshal(body, &updateItem); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}
-	
-	s.mu.Lock()
-	if _, exists := s.items[updateId]; !exists {
-    	s.mu.Unlock()
-     	http.Error(w, "item not found", http.StatusNotFound)
-      	return
+	if updateItem.Name == nil {
+		http.Error(w, "name is required", http.StatusBadRequest)
+		return
 	}
-	s.items[updateId] = updateItem
+
+	s.mu.Lock()
+	item, exists := s.items[updateId]
+	if !exists {
+		s.mu.Unlock()
+		http.Error(w, "item not found", http.StatusNotFound)
+		return
+	}
+	item.Name = *updateItem.Name
+	s.items[updateId] = item
 	s.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(updateItem); err != nil {
+	if err := json.NewEncoder(w).Encode(item); err != nil {
 		log.Printf("write response: %v", err)
 	}
 }
