@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"log"
+	"net/http"
+)
 
 func main() {
-	fmt.Print("Hello world")
+	log.Fatal(http.ListenAndServe(":8080", newHandler()))
 }
