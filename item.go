@@ -9,6 +9,8 @@ import (
 	"sync"
 )
 
+const maxRequestBodySize = 1 << 20 // 1 MiB
+
 type Item struct {
 	Name string `json:"name"`
 	ID   string `json:"id"`
@@ -33,7 +35,7 @@ func (s *itemReq) getItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (s *itemReq) postItem(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRequestBodySize))
 	if err != nil {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
@@ -70,7 +72,7 @@ func (s *itemReq) postItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *itemReq) putItem(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRequestBodySize))
 	if err != nil {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
