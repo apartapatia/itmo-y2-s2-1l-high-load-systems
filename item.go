@@ -80,18 +80,23 @@ func (s *itemReq) putItem(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	
+	updateId := r.PathValue("id")
+
 	var updateItem Item
 	if err := json.Unmarshal(body, &updateItem); err != nil {
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if updateItem.ID == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
+	
 	s.mu.Lock()
-	s.items[updateItem.ID] = updateItem
+	if _, exists := s.items[updateId]; !exists {
+    	s.mu.Unlock()
+     	http.Error(w, "item not found", http.StatusNotFound)
+      	return
+	}
+	s.items[updateId] = updateItem
 	s.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
