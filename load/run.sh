@@ -19,5 +19,5 @@ while true; do
     pandora_pid=$!
     wait "$pandora_pid"
     pandora_pid=
-    export START_RPS=20 RAMP_DURATION=1s
+    export START_RPS=5 RAMP_DURATION=1s
 done

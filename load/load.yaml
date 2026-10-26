@@ -1,3 +1,5 @@
+# HTTP RPS = pools * scenarios_per_second * sum(weight * requests) / sum(weight)
+# HTTP RPS = 2 * 5 * (12 * 4 + 1 * 1 + 1 * 1) / (12 + 1 + 1) ≈ 35.7
 pools:
   - id: pod-1
     gun:
@@ -17,10 +19,10 @@ pools:
     rps:
       - type: line
         from: ${env:START_RPS}
-        to: 20
+        to: 5
         duration: ${env:RAMP_DURATION}
       - type: const
-        ops: 20
+        ops: 5
         duration: ${env:HOLD_DURATION}
 
   - id: pod-2
@@ -41,10 +43,10 @@ pools:
     rps:
       - type: line
         from: ${env:START_RPS}
-        to: 20
+        to: 5
         duration: ${env:RAMP_DURATION}
       - type: const
-        ops: 20
+        ops: 5
         duration: ${env:HOLD_DURATION}
 
 log:
