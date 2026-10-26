@@ -2,6 +2,6 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: lab1-demo-service
+  - job_name: itmo-high-load-system-1lab
     static_configs:
-      - targets: ["lab1-demo-service-1:8080", "lab1-demo-service-2:8080"]
+      - targets: ["itmo-high-load-system-1lab-1:8080", "itmo-high-load-system-1lab-2:8080"]

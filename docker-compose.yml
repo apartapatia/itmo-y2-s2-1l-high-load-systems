@@ -1,5 +1,5 @@
 services:
-  lab1-demo-service-1:
+  itmo-high-load-system-1lab-1:
     image: itmo-high-load-system-1lab:dev
     build: .
     environment:
@@ -13,7 +13,7 @@ services:
       timeout: 3s
       retries: 5
 
-  lab1-demo-service-2:
+  itmo-high-load-system-1lab-2:
     image: itmo-high-load-system-1lab:dev
     build: .
     environment:
@@ -62,13 +62,33 @@ services:
       retries: 5
       start_period: 20s
 
+  dashboard-generator:
+    build:
+      context: .
+      dockerfile: cmd/dashboard-generator/Dockerfile
+    environment:
+      APP_URL: http://itmo-high-load-system-1lab-1:8080
+      GRAFANA_URL: http://grafana:3000
+      GRAFANA_ADMIN_USER: ${GRAFANA_ADMIN_USER:?Set GRAFANA_ADMIN_USER in .env}
+      GRAFANA_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+    depends_on:
+      itmo-high-load-system-1lab-1:
+        condition: service_healthy
+      itmo-high-load-system-1lab-2:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+    restart: "no"
+
   load:
     build: ./load
     depends_on:
-      lab1-demo-service-1:
+      itmo-high-load-system-1lab-1:
         condition: service_healthy
-      lab1-demo-service-2:
+      itmo-high-load-system-1lab-2:
         condition: service_healthy
+      dashboard-generator:
+        condition: service_completed_successfully
     stop_grace_period: 10s
 
 volumes:
