@@ -1,0 +1,85 @@
+requests:
+- name: create
+  method: POST
+  uri: /items
+  tag: create
+  templater:
+    type: text
+  postprocessors:
+  - type: assert/response
+    status_code: 201
+  - type: var/jsonpath
+    mapping:
+      id: $.id
+  headers:
+    Content-Type: application/json
+  body: '{"id":"load-{{uuid}}","name":"Original"}'
+- name: read
+  method: GET
+  uri: /items/{{.request.create.postprocessor.id}}
+  tag: read
+  templater:
+    type: text
+  postprocessors:
+  - type: assert/response
+    status_code: 200
+- name: update
+  method: PUT
+  uri: /items/{{.request.create.postprocessor.id}}
+  tag: update
+  templater:
+    type: text
+  postprocessors:
+  - type: assert/response
+    status_code: 200
+  headers:
+    Content-Type: application/json
+  body: '{"name":"Updated"}'
+- name: read_updated
+  method: GET
+  uri: /items/{{.request.create.postprocessor.id}}
+  tag: read_updated
+  templater:
+    type: text
+  postprocessors:
+  - type: assert/response
+    status_code: 200
+    body:
+    - '"name":"Updated"'
+- name: missing
+  method: GET
+  uri: /items/missing-{{uuid}}
+  tag: missing
+  templater:
+    type: text
+  postprocessors:
+  - type: assert/response
+    status_code: 404
+- name: duplicate
+  method: POST
+  uri: /items
+  tag: duplicate
+  templater:
+    type: text
+  postprocessors:
+  - type: assert/response
+    status_code: 409
+  headers:
+    Content-Type: application/json
+  body: '{"id":"1","name":"Duplicate"}'
+scenarios:
+- name: lifecycle
+  weight: 12
+  requests:
+  - create
+  - read
+  - update
+  - read_updated
+- name: not_found
+  weight: 1
+  requests:
+  - missing
+- name: conflict
+  weight: 1
+  requests:
+  - duplicate

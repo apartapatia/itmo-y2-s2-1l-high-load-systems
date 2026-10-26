@@ -1,0 +1,51 @@
+pools:
+  - id: pod-1
+    gun:
+      type: http/scenario
+      target: lab1-demo-service-1:8080
+      response-header-timeout: 5s
+    ammo:
+      type: http/scenario
+      file: /load/scenarios.yaml
+    result:
+      type: discard
+    rps-per-instance: false
+    discard_overflow: true
+    startup:
+      type: once
+      times: 10
+    rps:
+      - type: line
+        from: ${env:START_RPS}
+        to: 20
+        duration: ${env:RAMP_DURATION}
+      - type: const
+        ops: 20
+        duration: ${env:HOLD_DURATION}
+
+  - id: pod-2
+    gun:
+      type: http/scenario
+      target: lab1-demo-service-2:8080
+      response-header-timeout: 5s
+    ammo:
+      type: http/scenario
+      file: /load/scenarios.yaml
+    result:
+      type: discard
+    rps-per-instance: false
+    discard_overflow: true
+    startup:
+      type: once
+      times: 10
+    rps:
+      - type: line
+        from: ${env:START_RPS}
+        to: 20
+        duration: ${env:RAMP_DURATION}
+      - type: const
+        ops: 20
+        duration: ${env:HOLD_DURATION}
+
+log:
+  level: info
