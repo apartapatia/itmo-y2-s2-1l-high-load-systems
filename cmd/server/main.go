@@ -10,12 +10,14 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/apartapatia/itmo-y2-s2-high-load-systems/internal/service"
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	server := &http.Server{Handler: newHandler()}
+	server := &http.Server{Handler: service.NewHandler()}
 	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		log.Fatal(err)

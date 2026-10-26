@@ -1,4 +1,4 @@
-package main
+package service
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ type Route struct {
 	Handler http.HandlerFunc `json:"-"`
 }
 
-func newHandler() http.Handler {
+func NewHandler() http.Handler {
 	req := &itemReq{items: map[string]Item{"1": {Name: "Example", ID: "1"}}}
 
 	metrics := newHTTPMetrics(os.Getenv("POD_ID"), os.Getenv("DATACENTER"))

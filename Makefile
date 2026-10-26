@@ -5,7 +5,7 @@ PORT ?= 8080
 .PHONY: run test build docker-run up down ps logs
 
 run:
-	go run .
+	go run ./cmd/server
 
 test:
 	go test ./...
