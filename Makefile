@@ -2,7 +2,11 @@ PROJECT ?= itmo-high-load-system-1lab
 TAG ?= dev
 PORT ?= 8080
 
-.PHONY: app-run app-test docker-build docker-run docker-init docker-config docker-up docker-down docker-ps docker-logs docker-health load-logs load-start load-stop load-smoke
+.PHONY: app-run app-test
+.PHONY: docker-build docker-run docker-init docker-config
+.PHONY: docker-up docker-down docker-ps docker-logs docker-health
+.PHONY: load-logs load-start load-stop load-smoke
+.PHONY: dashboard-generate dashboard-logs
 
 app-run:
 	go run ./cmd/server
@@ -56,3 +60,9 @@ load-smoke: docker-config load-stop
 	docker compose run --rm --build \
 		-e START_RPS=1 -e RAMP_DURATION=5s -e HOLD_DURATION=15s \
 		--entrypoint pandora load /load/load.yaml
+
+dashboard-generate: docker-config
+	docker compose run --rm --build dashboard-generator
+
+dashboard-logs:
+	docker compose logs --tail=100 dashboard-generator
