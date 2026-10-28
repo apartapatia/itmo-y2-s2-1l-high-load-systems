@@ -24,8 +24,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := g.save(newDashboard(routes)); err != nil {
+	dashboard := newDashboard(routes)
+	if err := g.save(dashboard); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("saved /d/%s: %d routes, %d panels", dashboardUID, len(routes), len(routes)*3)
+	log.Printf("saved /d/%s: %d routes, %d panels", dashboardUID, len(routes), len(dashboard["panels"].([]map[string]any)))
 }

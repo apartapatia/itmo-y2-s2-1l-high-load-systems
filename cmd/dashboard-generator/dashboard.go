@@ -45,23 +45,20 @@ func newVariable(name, label, query string) map[string]any {
 func (d Dashboard) addRoute(route Route) {
 	name := route.Method + " " + route.Path
 	labels := dashboardLabels + `,handler=` + strconv.Quote(name)
-	panels := d["panels"].([]map[string]any)
-	i := len(panels)
-	d["panels"] = append(panels, map[string]any{
-		"id": i + 1, "title": name, "type": "row", "collapsed": false,
-		"gridPos": map[string]any{"x": 0, "y": 4 + ((i-6)/4)*9, "w": 24, "h": 1},
-		"panels":  []map[string]any{},
-	})
+	d.placePanel(map[string]any{
+		"title": name, "type": "row", "collapsed": false,
+		"panels": []map[string]any{},
+	}, 24, 1)
 	buckets := `sum by (le) (rate(http_request_duration_seconds_bucket{` + labels + `}[$__rate_interval]))`
-	d.addPanel(name+" — latency", "s", []map[string]any{
+	d.addPanel("timeseries", name+" — latency", "s", []map[string]any{
 		{"refId": "A", "expr": "histogram_quantile(0.50, " + buckets + ")", "legendFormat": "p50"},
 		{"refId": "B", "expr": "histogram_quantile(0.95, " + buckets + ")", "legendFormat": "p95"},
 		{"refId": "C", "expr": "histogram_quantile(0.99, " + buckets + ")", "legendFormat": "p99"},
 	})
-	d.addPanel(name+" — RPS", "reqps", []map[string]any{
+	d.addPanel("timeseries", name+" — RPS", "reqps", []map[string]any{
 		{"refId": "A", "expr": `sum(rate(http_requests_total{` + labels + `}[$__rate_interval]))`, "legendFormat": "requests/s"},
 	})
-	d.addPanel(name+" — errors", "reqps", []map[string]any{
+	d.addPanel("timeseries", name+" — errors", "reqps", []map[string]any{
 		{"refId": "A", "expr": `sum by (code) (rate(http_requests_total{` + labels + `,code=~"4..|5.."}[$__rate_interval]))`, "legendFormat": "{{code}}"},
 	})
 }
@@ -78,31 +75,49 @@ func (d Dashboard) addOverview() {
 		{"Errors", "reqps", errors},
 		{"Error ratio", "percent", "100 * " + errors + " / " + rps},
 	} {
-		panel := d.addPanel(stat.title, stat.unit, []map[string]any{
+		d.addPanel("stat", stat.title, stat.unit, []map[string]any{
 			{"refId": "A", "expr": stat.expr, "instant": true},
 		})
-		panel["type"] = "stat"
+	}
+}
+
+func (d Dashboard) addPanel(kind, title, unit string, targets []map[string]any) {
+	panel := map[string]any{
+		"title": title, "type": kind, "targets": targets,
+		"datasource":  map[string]any{"type": "prometheus", "uid": "prometheus"},
+		"fieldConfig": map[string]any{"defaults": map[string]any{"unit": unit, "min": 0}},
+	}
+	width, height := 8, 8
+	if kind == "stat" {
+		width, height = 4, 4
 		panel["description"] = "All application routes across selected pods. Current rate window, not the whole dashboard time range. Percentiles are estimates from histogram buckets."
-		panel["gridPos"] = map[string]any{"x": (panel["id"].(int) - 1) * 4, "y": 0, "w": 4, "h": 4}
 		panel["options"] = map[string]any{
 			"colorMode": "value", "graphMode": "none", "textMode": "auto",
 			"reduceOptions": map[string]any{"calcs": []string{"last"}, "values": false},
 		}
+	} else {
+		panel["options"] = map[string]any{
+			"tooltip": map[string]any{"mode": "multi"},
+			"legend":  map[string]any{"displayMode": "list", "placement": "bottom"},
+		}
 	}
+	d.placePanel(panel, width, height)
 }
 
-func (d Dashboard) addPanel(title, unit string, targets []map[string]any) map[string]any {
+func (d Dashboard) placePanel(panel map[string]any, width, height int) {
 	panels := d["panels"].([]map[string]any)
-	i := len(panels)
-	panel := map[string]any{
-		"id": i + 1, "title": title, "type": "timeseries", "targets": targets,
-		"datasource":  map[string]any{"type": "prometheus", "uid": "prometheus"},
-		"gridPos":     map[string]any{"x": ((i - 7) % 4) * 8, "y": 5 + ((i-7)/4)*9, "w": 8, "h": 8},
-		"options":     map[string]any{"tooltip": map[string]any{"mode": "multi"}, "legend": map[string]any{"displayMode": "list", "placement": "bottom"}},
-		"fieldConfig": map[string]any{"defaults": map[string]any{"unit": unit, "min": 0}},
+	x, y, bottom := 0, 0, 0
+	for _, previous := range panels {
+		grid := previous["gridPos"].(map[string]any)
+		x, y = grid["x"].(int)+grid["w"].(int), grid["y"].(int)
+		bottom = max(bottom, grid["y"].(int)+grid["h"].(int))
 	}
+	if x+width > 24 {
+		x, y = 0, bottom
+	}
+	panel["id"] = len(panels) + 1
+	panel["gridPos"] = map[string]any{"x": x, "y": y, "w": width, "h": height}
 	d["panels"] = append(panels, panel)
-	return panel
 }
 
 func (r Route) validate() error {

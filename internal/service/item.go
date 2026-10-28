@@ -35,19 +35,8 @@ func (s *itemReq) getItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (s *itemReq) postItem(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRequestBodySize))
-	if err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
-			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
-		} else {
-			http.Error(w, "cannot read request body", http.StatusBadRequest)
-		}
-		return
-	}
 	var newItem Item
-	if err := json.Unmarshal(body, &newItem); err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+	if !readJSON(w, r, &newItem) {
 		return
 	}
 	if newItem.ID == "" {
@@ -72,24 +61,11 @@ func (s *itemReq) postItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *itemReq) putItem(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRequestBodySize))
-	if err != nil {
-		var tooLarge *http.MaxBytesError
-		if errors.As(err, &tooLarge) {
-			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
-		} else {
-			http.Error(w, "cannot read request body", http.StatusBadRequest)
-		}
-		return
-	}
-
 	updateId := r.PathValue("id")
-
 	var updateItem struct {
 		Name *string `json:"name"`
 	}
-	if err := json.Unmarshal(body, &updateItem); err != nil {
-		http.Error(w, "invalid JSON", http.StatusBadRequest)
+	if !readJSON(w, r, &updateItem) {
 		return
 	}
 	if updateItem.Name == nil {
@@ -113,4 +89,22 @@ func (s *itemReq) putItem(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(item); err != nil {
 		log.Printf("write response: %v", err)
 	}
+}
+
+func readJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRequestBodySize))
+	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+		} else {
+			http.Error(w, "cannot read request body", http.StatusBadRequest)
+		}
+		return false
+	}
+	if err := json.Unmarshal(body, dst); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return false
+	}
+	return true
 }
